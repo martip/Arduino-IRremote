@@ -706,7 +706,7 @@ long IRrecv::decodeKogan(decode_results *results) {
   if (irparams.rawlen < 2 * KOGAN_BITS + 2) {
     return ERR;
   }
-  Serial.println("matched bits");
+  //Serial.println("matched bits");
   int offset = 0; // Skip first space
   // Initial space  
   /* Put this back in for debugging - note can't use #DEBUG as if Debug on we don't see the repeat cos of the delay
@@ -729,14 +729,14 @@ long IRrecv::decodeKogan(decode_results *results) {
     return ERR;
   }
   offset++;
-  Serial.println("initial mark");
+  //Serial.println("initial mark");
 
   // Skip Second Mark
   if (!MATCH_SPACE(results->rawbuf[offset], KOGAN_HDR_MARK)) {
     return ERR;
   }
   offset++;
-  Serial.println("initial space");
+  //Serial.println("initial space");
 
   while (offset + 1 < irparams.rawlen) {
     if (!MATCH_SPACE(results->rawbuf[offset], KOGAN_MARK)) {
@@ -760,7 +760,7 @@ long IRrecv::decodeKogan(decode_results *results) {
 
   // Success
   results->bits = (offset - 1) / 2;
-  if (results->bits < 12) {
+  if (results->bits < KOGAN_BITS) {
     results->bits = 0;
     return ERR;
   }
