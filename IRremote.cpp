@@ -435,7 +435,9 @@ int IRrecv::decode(decode_results *results) {
   if (decodeNEC(results)) {
     return DECODED;
   }
+#ifdef DEBUG
 Serial.println("Attempting KOGAN decode");
+#endif
   if (decodeKogan(results)) {
     return DECODED;
   }
