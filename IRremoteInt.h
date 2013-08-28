@@ -162,6 +162,18 @@
 #define JVC_ZERO_SPACE 550
 #define JVC_RPT_LENGTH 60000
 
+#define SAMSUNG_HDR_MARK 4500
+#define SAMSUNG_BITS 32
+#define SAMSUNG_HDR_SPACE 4500
+#define SAMSUNG_BIT_MARK 560
+#define SAMSUNG_ONE_SPACE 1600
+#define SAMSUNG_ZERO_SPACE 600
+
+#define RCMM_HDR_MARK   417
+#define RCMM_MARK   149 // Protocol says 167, but in practice we often seem to be short
+#define RCMM_SPACE    277
+#define RCMM_INCREMENT  167
+
 #define SHARP_BITS 15
 #define DISH_BITS 16
 
@@ -216,6 +228,7 @@ extern volatile irparams_t irparams;
 #define MIN_RC6_SAMPLES 1
 #define PANASONIC_BITS 48
 #define JVC_BITS 16
+#define RCMM_BITS 12
 
 
 

@@ -8,6 +8,8 @@
  * Interrupt code based on NECIRrcv by Joe Knapp
  * http://www.arduino.cc/cgi-bin/yabb2/YaBB.pl?num=1210243556
  * Also influenced by http://zovirl.com/2008/11/12/building-a-universal-remote-with-an-arduino/
+
+ * RCMM protocol added by Matthias Neeracher.
  *
  * JVC and Panasonic protocol added by Kristian Lauszus (Thanks to zenwheel and other people at the original blog post)
  */
@@ -23,29 +25,34 @@
 // #define DEBUG
 // #define TEST
 
+
+// Values for decode_type
+enum IRremoteType {
+UNKNOWN = -1,
+NEC = 1,
+SONY,
+RC5,
+RC6,
+DISH,
+SHARP,
+PANASONIC,
+JVC,
+SANYO,
+MITSUBISHI,
+RCMM,
+SAMSUNG
+};
+
 // Results returned from the decoder
 class decode_results {
 public:
-  int decode_type; // NEC, SONY, RC5, UNKNOWN
+  IRremoteType decode_type; // NEC, SONY, RC5, UNKNOWN
   unsigned int panasonicAddress; // This is only used for decoding Panasonic data
   unsigned long value; // Decoded value
   int bits; // Number of bits in decoded value
   volatile unsigned int *rawbuf; // Raw intervals in .5 us ticks
   int rawlen; // Number of records in rawbuf.
 };
-
-// Values for decode_type
-#define NEC 1
-#define SONY 2
-#define RC5 3
-#define RC6 4
-#define DISH 5
-#define SHARP 6
-#define PANASONIC 7
-#define JVC 8
-#define SANYO 9
-#define MITSUBISHI 10
-#define UNKNOWN -1
 
 // Decoded value for NEC when a repeat code is received
 #define REPEAT 0xffffffff
@@ -70,11 +77,12 @@ private:
   long decodeRC6(decode_results *results);
   long decodePanasonic(decode_results *results);
   long decodeJVC(decode_results *results);
+  long decodeRCMM(decode_results *results);
+  long decodeSamsung(decode_results *results);
   long decodeHash(decode_results *results);
   int compare(unsigned int oldval, unsigned int newval);
 
-} 
-;
+};
 
 // Only used for testing; can remove virtual for shorter code
 #ifdef TEST
@@ -98,13 +106,14 @@ public:
   void sendDISH(unsigned long data, int nbits);
   void sendSharp(unsigned long data, int nbits);
   void sendPanasonic(unsigned int address, unsigned long data);
+  void sendSamsung(unsigned long data, int nbits);
+  void sendRCMM(unsigned long data, int nbits);
   void sendJVC(unsigned long data, int nbits, int repeat); // *Note instead of sending the REPEAT constant if you want the JVC repeat signal sent, send the original code value and change the repeat argument from 0 to 1. JVC protocol repeats by skipping the header NOT by sending a separate code value like NEC does.
   // private:
   void enableIROut(int khz);
   VIRTUAL void mark(int usec);
   VIRTUAL void space(int usec);
-}
-;
+};
 
 // Some useful constants
 

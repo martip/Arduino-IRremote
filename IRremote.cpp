@@ -172,6 +172,27 @@ void IRsend::sendRC6(unsigned long data, int nbits)
   }
   space(0); // Turn off at end
 }
+
+void IRsend::sendSamsung(unsigned long data, int nbits)
+{
+    enableIROut(38);
+    mark(SAMSUNG_HDR_MARK);
+    space(SAMSUNG_HDR_SPACE);
+    for (int i = 0; i < nbits; i++) {
+        if (data & TOPBIT) {
+            mark(SAMSUNG_BIT_MARK);
+            space(SAMSUNG_ONE_SPACE);
+        } 
+        else {
+            mark(SAMSUNG_BIT_MARK);
+            space(SAMSUNG_ZERO_SPACE);
+        }
+        data <<= 1;
+    }
+    mark(SAMSUNG_BIT_MARK);
+    space(0);
+}
+
 void IRsend::sendPanasonic(unsigned int address, unsigned long data) {
     enableIROut(35);
     mark(PANASONIC_HDR_MARK);
@@ -221,6 +242,23 @@ void IRsend::sendJVC(unsigned long data, int nbits, int repeat)
     mark(JVC_BIT_MARK);
     space(0);
 }
+
+// Caller needs to take care of flipping the toggle bit
+void IRsend::sendRCMM(unsigned long data, int nbits)
+{
+  enableIROut(36);
+    data = data << (32 - nbits);
+  mark(RCMM_HDR_MARK);
+  space(RCMM_SPACE);
+  for (int i = 0; i < nbits; i += 2) {
+    mark(RCMM_MARK);
+    space(RCMM_SPACE+(data >> 30)*RCMM_INCREMENT);
+    data <<= 2;
+  }
+  mark(RCMM_MARK);
+  space(0);
+}
+
 void IRsend::mark(int time) {
   // Sends an IR mark for the specified number of microseconds.
   // The mark output is modulated at the PWM frequency.
@@ -439,6 +477,18 @@ int IRrecv::decode(decode_results *results) {
     if (decodeJVC(results)) {
         return DECODED;
     }
+#ifdef DEBUG
+  Serial.println("Attempting SAMSUNG decode");
+#endif 
+  if (decodeSamsung(results)) {
+    return DECODED;
+  }
+#ifdef DEBUG
+    Serial.println("Attempting RCMM decode");
+#endif 
+  if (decodeRCMM(results)) {
+    return DECODED;
+  }
   // decodeHash returns a hash on any input.
   // Thus, it needs to be last in the list.
   // If you add any decodes, add them before this.
@@ -844,6 +894,52 @@ long IRrecv::decodePanasonic(decode_results *results) {
     results->bits = PANASONIC_BITS;
     return DECODED;
 }
+
+long IRrecv::decodeSamsung(decode_results *results) {
+    long data = 0;
+    int offset = 1; // Skip first space
+    // Initial mark
+    if (!MATCH_MARK(results->rawbuf[offset], SAMSUNG_HDR_MARK)) {
+        return ERR;
+    }
+    offset++;
+
+    // Check bits
+    if (irparams.rawlen < 2 * SAMSUNG_BITS + 4) {
+        return ERR;
+    }
+
+    // Initial space
+    if (!MATCH_SPACE(results->rawbuf[offset], SAMSUNG_HDR_SPACE)) {
+        return ERR;
+    }
+    offset++;
+    //Serial.println("OFFSET");
+    //Serial.println(offset);
+
+    for (int i = 0; i < SAMSUNG_BITS; i++) {
+        if (!MATCH_MARK(results->rawbuf[offset], SAMSUNG_BIT_MARK)) {
+            return ERR;
+        }
+        offset++;
+        if (MATCH_SPACE(results->rawbuf[offset], SAMSUNG_ONE_SPACE)) {
+            data = (data << 1) | 1;
+        }
+        else if (MATCH_SPACE(results->rawbuf[offset], SAMSUNG_ZERO_SPACE)) {
+            data <<= 1;
+        }
+        else {
+            return ERR;
+        }
+        offset++;
+    }
+    // Success
+    results->bits = SAMSUNG_BITS;
+    results->value = data & 0xffffffff;
+    results->decode_type = SAMSUNG;
+    return DECODED;
+}
+
 long IRrecv::decodeJVC(decode_results *results) {
     long data = 0;
     int offset = 1; // Skip first space
@@ -894,6 +990,59 @@ long IRrecv::decodeJVC(decode_results *results) {
     results->value = data;
     results->decode_type = JVC;
     return DECODED;
+}
+
+long IRrecv::decodeRCMM(decode_results *results) {
+  long data = 0;
+  if (irparams.rawlen < RCMM_BITS + 4) {
+    return ERR;
+  }
+  int offset = 1; // Skip first space
+  // Initial mark
+  if (!MATCH_MARK(results->rawbuf[offset], RCMM_HDR_MARK)) {
+    return ERR;
+  }
+  offset++;
+  if (!MATCH_SPACE(results->rawbuf[offset], RCMM_SPACE)) {
+    return ERR;
+  }
+  offset++;
+
+  while (offset + 1 < irparams.rawlen) {
+    if (!MATCH_MARK(results->rawbuf[offset], RCMM_MARK)) {
+      return ERR;
+    }
+    offset++;
+    if (MATCH_SPACE(results->rawbuf[offset], RCMM_SPACE)) {
+    data = (data << 2) | 0;
+    } 
+    else if (MATCH_SPACE(results->rawbuf[offset], RCMM_SPACE+RCMM_INCREMENT)) {
+    data = (data << 2) | 1;
+    } 
+    else if (MATCH_SPACE(results->rawbuf[offset], RCMM_SPACE+2*RCMM_INCREMENT)) {
+    data = (data << 2) | 2;
+    } 
+    else if (MATCH_SPACE(results->rawbuf[offset], RCMM_SPACE+3*RCMM_INCREMENT)) {
+    data = (data << 2) | 3;
+    } 
+    else {
+      return ERR;
+    }
+    offset++;
+  }
+  if (!MATCH_MARK(results->rawbuf[offset], RCMM_MARK)) {
+    return ERR;
+  }
+
+  // Success
+  results->bits = (offset - 3);
+  if (results->bits < RCMM_BITS) {
+    results->bits = 0;
+    return ERR;
+  }
+  results->value = data;
+  results->decode_type = RCMM;
+  return DECODED;
 }
 
 /* -----------------------------------------------------------------------
