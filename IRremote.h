@@ -40,7 +40,8 @@ JVC,
 SANYO,
 MITSUBISHI,
 RCMM,
-SAMSUNG
+SAMSUNG,
+KOGAN
 };
 
 // Results returned from the decoder
@@ -72,6 +73,7 @@ private:
   long decodeNEC(decode_results *results);
   long decodeSony(decode_results *results);
   long decodeSanyo(decode_results *results);
+  long decodeKogan(decode_results *results);
   long decodeMitsubishi(decode_results *results);
   long decodeRC5(decode_results *results);
   long decodeRC6(decode_results *results);
@@ -97,6 +99,7 @@ public:
   IRsend() {}
   void sendNEC(unsigned long data, int nbits);
   void sendSony(unsigned long data, int nbits);
+  void sendKogan(unsigned long data, int nbits);
   // Neither Sanyo nor Mitsubishi send is implemented yet
   //  void sendSanyo(unsigned long data, int nbits);
   //  void sendMitsubishi(unsigned long data, int nbits);

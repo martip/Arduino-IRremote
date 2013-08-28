@@ -435,6 +435,10 @@ int IRrecv::decode(decode_results *results) {
   if (decodeNEC(results)) {
     return DECODED;
   }
+Serial.println("Attempting KOGAN decode");
+  if (decodeKogan(results)) {
+    return DECODED;
+  }
 #ifdef DEBUG
   Serial.println("Attempting Sony decode");
 #endif
@@ -662,6 +666,106 @@ long IRrecv::decodeSanyo(decode_results *results) {
   }
   results->value = data;
   results->decode_type = SANYO;
+  return DECODED;
+}
+
+#define KOGAN_BITS 16
+#define KOGAN_HDR_MARK 3000
+#define KOGAN_TRAILER_SPACE 4000
+#define KOGAN_MARK 500
+#define KOGAN_ZERO_SPACE 1500
+#define KOGAN_ONE_SPACE 2500
+
+void IRsend::sendKogan(unsigned long data, int nbits)
+{
+    enableIROut(38);
+    data = data << (32 - nbits);
+    mark(KOGAN_HDR_MARK);
+    space(KOGAN_HDR_MARK); 
+    for (int i = 0; i < nbits; i++) {
+        if (data & TOPBIT) {
+            mark(KOGAN_MARK);
+            space(KOGAN_ONE_SPACE); 
+        } 
+        else {
+            mark(KOGAN_MARK);
+            space(KOGAN_ZERO_SPACE); 
+        }
+        data <<= 1;
+    }
+    mark(KOGAN_MARK);
+    space(KOGAN_TRAILER_SPACE);
+    mark(KOGAN_MARK);
+    space(0);
+}
+
+
+//repeats seem to be pretty much the same as sanyo; a shorter gap. also seems to transmit a repeat with just a normal push, except a very small press
+long IRrecv::decodeKogan(decode_results *results) {
+  long data = 0;
+  if (irparams.rawlen < 2 * KOGAN_BITS + 2) {
+    return ERR;
+  }
+  Serial.println("matched bits");
+  int offset = 0; // Skip first space
+  // Initial space  
+  /* Put this back in for debugging - note can't use #DEBUG as if Debug on we don't see the repeat cos of the delay
+  Serial.print("IR Gap: ");
+  Serial.println( results->rawbuf[offset]);
+  Serial.println( "test against:");
+  Serial.println(results->rawbuf[offset]);
+  */
+  if (results->rawbuf[offset] < SANYO_DOUBLE_SPACE_USECS) {
+     //Serial.print("IR Gap found: ");
+    results->bits = 0;
+    results->value = REPEAT;
+    results->decode_type = KOGAN;
+    return DECODED;
+  }
+  offset++;
+
+  // Initial mark
+  if (!MATCH_MARK(results->rawbuf[offset], KOGAN_HDR_MARK)) {
+    return ERR;
+  }
+  offset++;
+  Serial.println("initial mark");
+
+  // Skip Second Mark
+  if (!MATCH_SPACE(results->rawbuf[offset], KOGAN_HDR_MARK)) {
+    return ERR;
+  }
+  offset++;
+  Serial.println("initial space");
+
+  while (offset + 1 < irparams.rawlen) {
+    if (!MATCH_SPACE(results->rawbuf[offset], KOGAN_MARK)) {
+      break;
+    }
+    offset++;
+    if (MATCH_SPACE(results->rawbuf[offset], KOGAN_ONE_SPACE)) {
+      data = (data << 1) | 1;
+    } 
+    else if (MATCH_SPACE(results->rawbuf[offset], KOGAN_ZERO_SPACE)) {
+      data <<= 1;
+    } 
+    else if (MATCH_SPACE(results->rawbuf[offset], KOGAN_TRAILER_SPACE)) {
+      break;
+    }
+    else {
+      return ERR;
+    }
+    offset++;
+  }
+
+  // Success
+  results->bits = (offset - 1) / 2;
+  if (results->bits < 12) {
+    results->bits = 0;
+    return ERR;
+  }
+  results->value = data;
+  results->decode_type = KOGAN;
   return DECODED;
 }
 
