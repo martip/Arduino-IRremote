@@ -1,6 +1,6 @@
 ***
 
-Forked to add XMP protocol, used in MySKY HD sat receivers/PVR by SKY Italia.
+Forked to add the XMP protocol, used in MySKY HD sat receivers/PVR by SKY Italia.
 Actually, the remote is made by (or licenesed from) Universal Electroncis (http://www.uei.com), so the same protocol should work for many ohter devices (Comcast etc.).
 
 I found interesting details about the XMP protocol on the JP1 project wiki: http://www.hifi-remote.com/wiki/index.php?title=DecodeIR#XMP
