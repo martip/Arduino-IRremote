@@ -1,3 +1,12 @@
+***
+
+Forked to add XMP protocol, used in MySKY HD sat receivers/PVR by SKY Italia.
+Actually, the remote is made by (or licenesed from) Universal Electroncis (http://www.uei.com), so the same protocol should work for many ohter devices (Comcast etc.).
+
+I found interesting details about the XMP protocol on the JP1 project wiki: http://www.hifi-remote.com/wiki/index.php?title=DecodeIR#XMP
+
+***
+
 This is the IRremote library for the Arduino.
 
 To download from github (http://github.com/shirriff/Arduino-IRremote), click on the "Downloads" link in the upper right, click "Download as zip", and get a zip file.  Unzip it and rename the directory shirriff-Arduino-IRremote-nnn to IRremote
