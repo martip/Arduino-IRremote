@@ -261,7 +261,7 @@ void IRsend::sendRCMM(unsigned long data, int nbits)
 
 unsigned long IRsend::XMPSpaceLength(int value)
 {
-	return XMP_SPACE_BASE + value * XMP_SPACE_MULTIPLIER;
+  return XMP_SPACE_BASE + value * XMP_SPACE_MULTIPLIER;
 }
 
 short IRsend::XMPChecksum(short nibbles[])
