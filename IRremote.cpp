@@ -247,7 +247,7 @@ void IRsend::sendJVC(unsigned long data, int nbits, int repeat)
 void IRsend::sendRCMM(unsigned long data, int nbits)
 {
   enableIROut(36);
-    data = data << (32 - nbits);
+  data = data << (32 - nbits);
   mark(RCMM_HDR_MARK);
   space(RCMM_SPACE);
   for (int i = 0; i < nbits; i += 2) {
@@ -258,6 +258,112 @@ void IRsend::sendRCMM(unsigned long data, int nbits)
   mark(RCMM_MARK);
   space(0);
 }
+
+unsigned long IRsend::XMPSpaceLength(int value)
+{
+	return XMP_SPACE_BASE + value * XMP_SPACE_MULTIPLIER;
+}
+
+short IRsend::XMPChecksum(short nibbles[])
+{
+  int sum = 0;
+
+  for (short i = 0; i < 8; i++) {
+    sum += nibbles[i];
+  }
+  return (16 - (sum % 16));
+}
+
+void IRsend::sendXMP(unsigned long data, short repeat, short owner, short tag, unsigned long registry)
+{
+  enableIROut(38);
+  
+  int transmission[131];
+
+  short nibbles[8];
+  short registry_packet[8];
+
+  /*
+     registry packet example:  0x2 0x3 0x0 0xF 0x4431
+     nibble 0: owner
+     nibble 1: checksum
+     nibble 2: tag
+     nibble 3: XMP_REGISTRY_NIBBLE (fixed value: 0xF)
+     nibbles 4 to 7: registry number (manufacturer, product name, model etc.)
+     
+  */
+
+  nibbles[0] = owner;
+  nibbles[1] = 0;	// placeholder for checksum
+  nibbles[2] = tag;
+  nibbles[3] = XMP_REGISTRY_NIBBLE;
+  for (short i = 0; i < 4; i++) {
+      nibbles[4 + i] = (registry >> 12 - (4 * i)) & 0xF;
+  }
+  nibbles[1] = XMPChecksum(nibbles);
+  memcpy (registry_packet, nibbles, sizeof (nibbles));
+  
+  for (short i = 0; i < 8; i++) {
+    transmission[i] = XMPSpaceLength(registry_packet[i]);
+  }
+  
+  transmission[8] = XMP_PACKET_GAP;
+  
+  /*
+     data packet example: 0x2 0x4 0x0 0x0 0x5500
+     nibble 0: owner
+     nibble 1: checksum
+     nibble 2: repeat flag (0x0 = first sending, 0x8 = subsequent sendings)
+     nibble 3: tag
+     nibbles 4 to 7: data
+  */
+  
+  nibbles[1] = 0;
+  nibbles[3] = 0;
+  for (short i = 0; i < 4; i++) {
+     nibbles[4 + i] = (data >> 12 - (4 * i)) & 0xF;
+  }
+  
+  nibbles[1] = XMPChecksum(nibbles);
+  
+  for (short i = 0; i < 8; i++) {
+     transmission[9 + i] = XMPSpaceLength(nibbles[i]);
+  }
+  
+  transmission[17] = XMP_REPEAT_GAP;
+  
+  for (short i = 0; i < 8; i++) {
+     transmission[18 + i] = XMPSpaceLength(registry_packet[i]);
+  }
+  
+  transmission[26] = XMP_PACKET_GAP;
+
+  /*
+     repeat packet example: 0x2 0xC 0x8 0x0 0x5500
+     nibble 0: owner
+     nibble 1: checksum
+     nibble 2: repeat flag (0x0 = first sending, 0x8 = subsequent sendings)
+     nibble 3: tag
+     nibbles 4 to 7: data
+  */
+
+  nibbles[1] = 0;
+  nibbles[3] = XMP_REPEAT_NIBBLE;
+  for (short i = 0; i < 4; i++) {
+     nibbles[4 + i] = (data >> 12 - (4 * i)) & 0xF;
+  }
+  nibbles[1] = XMPChecksum(nibbles);
+  
+  for (short i = 0; i < 4; i++) {
+     transmission[27 + i] = XMPSpaceLength(nibbles[i]);
+  }
+
+  for (short i = 0; i < 35; i++) {
+     mark(XMP_MARK);
+     space(transmission[i]);
+  }
+  
+}  
 
 void IRsend::mark(int time) {
   // Sends an IR mark for the specified number of microseconds.

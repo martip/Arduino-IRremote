@@ -5,6 +5,10 @@ Actually, the remote is made by (or licenesed from) Universal Electroncis (http:
 
 I found interesting details about the XMP protocol on the JP1 project wiki: http://www.hifi-remote.com/wiki/index.php?title=DecodeIR#XMP
 
+Starting off from those informations, I managed to reverse-engineer the protocol and everything seems to work fine, at least for the MySKY HD receiver.
+
+I'll publish some details of the reverse-engineering process on my blog as soon as I can.
+
 ***
 
 This is the IRremote library for the Arduino.

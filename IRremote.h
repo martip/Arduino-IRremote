@@ -41,7 +41,8 @@ SANYO,
 MITSUBISHI,
 RCMM,
 SAMSUNG,
-KOGAN
+KOGAN,
+XMP
 };
 
 // Results returned from the decoder
@@ -81,6 +82,7 @@ private:
   long decodeJVC(decode_results *results);
   long decodeRCMM(decode_results *results);
   long decodeSamsung(decode_results *results);
+  long decodeXMP(decode_results *results);
   long decodeHash(decode_results *results);
   int compare(unsigned int oldval, unsigned int newval);
 
@@ -112,10 +114,17 @@ public:
   void sendSamsung(unsigned long data, int nbits);
   void sendRCMM(unsigned long data, int nbits);
   void sendJVC(unsigned long data, int nbits, int repeat); // *Note instead of sending the REPEAT constant if you want the JVC repeat signal sent, send the original code value and change the repeat argument from 0 to 1. JVC protocol repeats by skipping the header NOT by sending a separate code value like NEC does.
+  void sendXMP(unsigned long data, short repeat, short owner, short tag, unsigned long registry);
+  
   // private:
   void enableIROut(int khz);
   VIRTUAL void mark(int usec);
   VIRTUAL void space(int usec);
+
+private:
+  unsigned long XMPSpaceLength(int value);
+  short XMPChecksum(short nibbles[]);
+
 };
 
 // Some useful constants

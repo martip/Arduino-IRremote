@@ -174,6 +174,16 @@
 #define RCMM_SPACE    277
 #define RCMM_INCREMENT  167
 
+// XMP uses one burst pair to encode numbers 0 to 15, with an on duration of 210uS, and off duration of 760uS + n*136uS where n takes on values of 0 to 15
+// Gaps are empirically determined
+#define XMP_MARK   210
+#define XMP_SPACE_BASE   760
+#define XMP_SPACE_MULTIPLIER   136
+#define XMP_PACKET_GAP   12320
+#define XMP_REPEAT_GAP   76920
+#define XMP_REPEAT_NIBBLE   0x8
+#define XMP_REGISTRY_NIBBLE 0xF
+
 #define SHARP_BITS 15
 #define DISH_BITS 16
 
